@@ -6,8 +6,8 @@ from db.db import db
 import os
 
 # Import resources here
-# from resources.reply import Reply
-# from resources.thread import Thread
+from resources.vote import Vote
+from resources.candidate import Candidate
 
 app = Flask(__name__)
 Talisman(app)
