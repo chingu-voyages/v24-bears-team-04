@@ -25,7 +25,7 @@ def create_tables():
     db.create_all()
 
 # Replace below with references to resources:
-api.add_resource(Vote, "/")
+api.add_resource(Vote, "/api/vote")
 # api.add_resource(Thread, "/api/threads/<board_name>")
 
 if __name__ == "__main__":
