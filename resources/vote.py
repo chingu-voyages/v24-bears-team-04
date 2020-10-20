@@ -1,7 +1,7 @@
 from flask_restful import Resource, reqparse
 import datetime
 
-from models.vote import VoteModel
+from models.candidate import CandidateModel
 
 class Vote(Resource):
     parser = reqparse.RequestParser()
@@ -9,15 +9,17 @@ class Vote(Resource):
     parser.add_argument("candidate_id", type=str)
     parser.add_argument("voter_id", type=str)
 
-    def post(self):
-        data = Reply.parser.parse_args()
-        voter_id = data["voter_id"]
-        candidate_id = data["candidate_id"]
+    def post(self, candidate_name):
+        candidate = CandidateModel.find_by_name(name=candidate_name)
+        if not candidate:
+            candidate = CandidateModel(name=candidate_name)
+            candidate.save_to_db()
+        candidate.votes = candidate.votes + 1
+        return {"candidate name": candidate.name, "votes": candidate.votes}
 
-        new_vote = VoteModel(
-            candidate_id=candidate_id, 
-            voter_id=voter_id
-        )
-
-        new_vote.save_to_db()
-        return new_vote.json(), 201
+    def get(self):
+        candidates = CandidateModel.query.all()
+        json = []
+        for candidate in candidates:
+            json.append(candidate.json())
+        return json

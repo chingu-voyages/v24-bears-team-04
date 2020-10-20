@@ -7,7 +7,6 @@ import os
 
 # Import resources here
 from resources.vote import Vote
-from resources.candidate import Candidate
 
 app = Flask(__name__)
 Talisman(app)
@@ -26,8 +25,9 @@ def create_tables():
     db.create_all()
 
 # Replace below with references to resources:
-# api.add_resource(Reply, "/api/replies/<board_name>")
+api.add_resource(Vote, "/")
 # api.add_resource(Thread, "/api/threads/<board_name>")
 
 if __name__ == "__main__":
     app.run(debug=True)
+
