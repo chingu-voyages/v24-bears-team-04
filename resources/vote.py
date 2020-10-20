@@ -5,16 +5,16 @@ from models.candidate import CandidateModel
 
 class Vote(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument("vote_id", type=str)
-    parser.add_argument("candidate_id", type=str)
-    parser.add_argument("voter_id", type=str)
+    parser.add_argument("candidate_name", type=str)
 
-    def post(self, candidate_name):
+    def post(self):
+        data = Vote.parser.parse_args()
+        candidate_name = data["candidate_name"]
         candidate = CandidateModel.find_by_name(name=candidate_name)
         if not candidate:
             candidate = CandidateModel(name=candidate_name)
-            candidate.save_to_db()
         candidate.votes = candidate.votes + 1
+        candidate.save_to_db()
         return {"candidate name": candidate.name, "votes": candidate.votes}
 
     def get(self):
