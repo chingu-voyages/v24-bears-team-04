@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Candidates</h1>
+    <ul>
+    {% for candidate in object_list %}
+        <li>Name: {{candidate.name}} | Votes: {{candidate.votes}}</li>
+    {% empty %}
+        <li>No candidates yet.</li>
+    {% endfor %}
+    </ul>
+{% endblock content %}
