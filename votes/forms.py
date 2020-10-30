@@ -1,7 +1,4 @@
 from django import forms
-from .models import Candidate
-
-class VoteForm(forms.ModelForm):
-    class Meta:
-        model = Candidate
-        fields = ('name',)
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from captcha.fields import ReCaptchaField
+from .models import Candidate, User, Election

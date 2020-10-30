@@ -1,56 +1,184 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.generic.list import ListView
-from .models import Candidate
-from .forms import VoteForm
+from django.views.generic.detail import DetailView
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
+from django.contrib import auth
+from django.contrib.auth import authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .serializers import ElectionSerializer, UserSerializer, CandidateSerializer
+from .decorators import unauthenticated_user, official_only
+from .models import Candidate, Election, User
+from .forms import UserCreationForm
 
-class CandidateListView(ListView):
-    model = Candidate
-    template_name = 'candidate_list.html'
-    fields = ['name']
-    
-    def form_valid(self, form):        
-        return super().form_valid(form)
 
-def vote(request):
-    form = VoteForm()
+@unauthenticated_user
+def login(request):
     if request.method == 'POST':
-        form = VoteForm(request.POST)
-        if form.is_valid():
-            try:
-                candidate = Candidate.objects.get(name=request.POST.get('name'))
-            except Candidate.DoesNotExist:
-                candidate = Candidate(name=request.POST.get('name'))
-            candidate.votes = candidate.votes + 1
-            candidate.save()
-            context = {'candidate': candidate.name}
-            return HttpResponse("Your vote has been confirmed.")
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            auth.login(request, user)
+            return redirect('home')
         else:
-            return HttpResponse("There was an error with your vote.")
-    context = {'form': form}
+            messages.info(request, 'Username OR password is incorrect')
+    context = {}
+    return render(request, 'login.html', context)
+
+@login_required(login_url='login')
+def vote(request, pk):
+    user = User.objects.get(id=request.user.pk)
+    if (user.elections.all().filter(pk=pk).exists()):
+        return HttpResponse('You have already voted in this election.')
+    election = Election.objects.get(id=pk)
+    candidates = election.candidate_set.all()
+    if request.method == 'POST':
+        candidate = Candidate.objects.get(id=request.POST['candidate'])
+        candidate.votes = candidate.votes + 1
+        candidate.save()
+        user.elections.add(election)
+        return HttpResponse("Your vote has been confirmed.")
+    context = {'election': election, 'candidates': candidates}
     return render(request, 'vote.html', context)
 
+def logout(request):
+	auth.logout(request)
+	return redirect('login')
 
-# flask vote resource
+@login_required(login_url='login')
+def home(request):
+	user = request.user
+	context = {'user': user}
+	return render(request, 'home.html', context)
 
-# class Vote(Resource):
-#     parser = reqparse.RequestParser()
-#     parser.add_argument("candidate_name", type=str)
+@unauthenticated_user
+@api_view(['POST'])
+def register(request):
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
 
-#     def post(self):
-#         data = Vote.parser.parse_args()
-#         candidate_name = data["candidate_name"]
-#         candidate = CandidateModel.find_by_name(name=candidate_name)
-#         if not candidate:
-#             candidate = CandidateModel(name=candidate_name)
-#         candidate.votes = candidate.votes + 1
-#         candidate.save_to_db()
-#         return {"candidate name": candidate.name, "votes": candidate.votes}
+@api_view(['GET'])
+def electionList(request):
+    elections = Election.objects.all()
+    serializer = ElectionSerializer(elections, many=True)
+    return Response(serializer.data)
 
-#     def get(self):
-#         candidates = CandidateModel.query.all()
-#         json = []
-#         for candidate in candidates:
-#             json.append(candidate.json())
-#         return json
+@api_view(['GET'])
+def electionDetail(request, pk):
+    election = Election.objects.get(id=pk)
+    serializer = ElectionSerializer(election, many=False)
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['POST'])
+def electionCreate(request):
+    serializer = ElectionSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['POST'])
+def electionUpdate(request, pk):
+    election = Election.objects.get(id=pk)
+    serializer = ElectionSerializer(instance=election, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['DELETE'])
+def electionDelete(request, pk):
+    election = Election.objects.get(id=pk)
+    election.delete()
+    return Response('The election has been deleted.')
+
+@api_view(['GET'])
+def electionCandidateList(request, pk):
+    election = Election.objects.get(id=pk)
+    candidates = election.candidate_set.all()
+    serializer = CandidateSerializer(candidates, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def candidateList(request):
+    candidates = Candidate.objects.all()
+    serializer = CandidateSerializer(candidates, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def candidateDetail(request, pk):
+    candidate = Candidate.objects.get(id=pk)
+    serializer = CandidateSerializer(candidate, many=False)
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['POST'])
+def candidateCreate(request):
+    serializer = CandidateSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['POST'])
+def candidateUpdate(request, pk):
+    candidate = Candidate.objects.get(id=pk)
+    serializer = CandidateUpdate(instance=candidate, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    else:
+        Response('There was an error with your update.')
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['DELETE'])
+def candidateDelete(request, pk):
+    candidate = Candidate.objects.get(id=pk)
+    candidate.delete()
+    return Response('The candidate has been deleted.')
+
+@login_required(login_url='login')
+@official_only
+@api_view(['GET'])
+def userList(request):
+    users = User.objects.all()
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@api_view(['POST'])
+def userUpdate(request):
+    user = User.objects.get(id=request.user.pk)
+    serializer = UserSerializer(user, many=False)
+    if serializer.is_valid():
+        serializer.save()
+    else:
+        Response('There was an error with your update.')
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@api_view(['GET'])
+def userDetail(request):
+    user = User.objects.get(id=request.user.pk)
+    serializer = UserSerializer(user, many=False)
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@api_view(['DELETE'])
+def userDelete(request):
+    user = User.objects.get(id=request.user.pk)
+    user.delete()
+    return Response('This user has been deleted.')

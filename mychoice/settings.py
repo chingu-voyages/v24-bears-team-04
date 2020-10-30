@@ -33,6 +33,8 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'votes.apps.VotesConfig',
+    'rest_framework',
+    'captcha',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -115,9 +117,15 @@ USE_L10N = True
 
 USE_TZ = True
 
+AUTH_USER_MODEL = 'votes.User'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Captcha
+RECAPTCHA_PUBLIC_KEY = '6LeqDuUUAAAAAD3wluZIIFqHMV_PorKXkWor9Z_W'
+RECAPTCHA_PRIVATE_KEY = '6LeqDuUUAAAAAEwQ64xTjGdlsBFOE5VCyMZW-YbQ'
