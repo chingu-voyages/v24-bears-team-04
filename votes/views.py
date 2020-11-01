@@ -9,11 +9,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import ElectionSerializer, UserSerializer, CandidateSerializer
+from .serializers import ElectionSerializer, UserSerializer, CandidateSerializer, PositionSerializer
 from .decorators import unauthenticated_user, official_only
-from .models import Candidate, Election, User
+from .models import Candidate, Election, User, Position
 from .forms import UserCreationForm
-
 
 @unauthenticated_user
 def login(request):
@@ -35,25 +34,30 @@ def vote(request, pk):
     if (user.elections.all().filter(pk=pk).exists()):
         return HttpResponse('You have already voted in this election.')
     election = Election.objects.get(id=pk)
-    candidates = election.candidate_set.all()
+    positions = election.position_set.all()
+    position_candidates = {}
+    for position in positions:
+        position_candidates[position] = position.candidate_set.all()
     if request.method == 'POST':
-        candidate = Candidate.objects.get(id=request.POST['candidate'])
-        candidate.votes = candidate.votes + 1
-        candidate.save()
+        print(request.POST)
+        for position in positions:
+            if request.POST.get(position.name) is None:
+                continue
+            candidate = Candidate.objects.get(id=request.POST[position.name])
+            candidate.votes = candidate.votes + 1
+            candidate.save()
         user.elections.add(election)
         return HttpResponse("Your vote has been confirmed.")
-    context = {'election': election, 'candidates': candidates}
+    context = {'election': election, 'position_candidates': position_candidates}
     return render(request, 'vote.html', context)
+
+def home(request):
+    context = {'user': request.user}
+    return render(request, 'home.html', context)
 
 def logout(request):
 	auth.logout(request)
 	return redirect('login')
-
-@login_required(login_url='login')
-def home(request):
-	user = request.user
-	context = {'user': user}
-	return render(request, 'home.html', context)
 
 @unauthenticated_user
 @api_view(['POST'])
@@ -62,6 +66,8 @@ def register(request):
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data)
+
+# ELECTIONS
 
 @api_view(['GET'])
 def electionList(request):
@@ -72,7 +78,7 @@ def electionList(request):
 @api_view(['GET'])
 def electionDetail(request, pk):
     election = Election.objects.get(id=pk)
-    serializer = ElectionSerializer(election, many=False)
+    serializer = ElectionSerializer(election, many=False, context={'positions': election.position_set})
     return Response(serializer.data)
 
 @login_required(login_url='login')
@@ -102,12 +108,64 @@ def electionDelete(request, pk):
     election.delete()
     return Response('The election has been deleted.')
 
+
 @api_view(['GET'])
-def electionCandidateList(request, pk):
+def electionPositionList(request, pk):
     election = Election.objects.get(id=pk)
-    candidates = election.candidate_set.all()
+    positions = election.position_set.all()
+    serializer = PositionSerializer(positions, many=True)
+    return Response(serializer.data)
+
+# ELECTION POSITIONS
+
+@api_view(['GET'])
+def positionList(request):
+    positions = Position.objects.all()
+    serializer = PositionSerializer(positions, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def positionDetail(request, pk):
+    position = Position.objects.get(id=pk)
+    serializer = PositionSerializer(position, many=False)
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['POST'])
+def positionCreate(request, pk):
+    election = Election.objects.get(id=pk)
+    serializer = PositionSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['POST'])
+def positionUpdate(request, pk):
+    position = Position.objects.get(id=pk)
+    serializer = PositionSerializer(instance=position, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
+@login_required(login_url='login')
+@official_only
+@api_view(['DELETE'])
+def positionDelete(request, pk):
+    position = Position.objects.get(id=pk)
+    position.delete()
+    return Response('The position has been deleted.')
+
+@api_view(['GET'])
+def positionCandidateList(request, pk):
+    position = Position.objects.get(id=pk)
+    candidates = position.candidate_set.all()
     serializer = CandidateSerializer(candidates, many=True)
     return Response(serializer.data)
+
+# CANDIDATES
 
 @api_view(['GET'])
 def candidateList(request):
@@ -149,6 +207,8 @@ def candidateDelete(request, pk):
     candidate = Candidate.objects.get(id=pk)
     candidate.delete()
     return Response('The candidate has been deleted.')
+
+# USERS
 
 @login_required(login_url='login')
 @official_only
