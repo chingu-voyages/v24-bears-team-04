@@ -12,6 +12,9 @@ flask-restful = "*"
 flask-talisman = "*"
 flask-sqlalchemy = "*"
 gunicorn = "*"
+django-recaptcha = "*"
+pillow = "*"
+djangorestframework = "*"
 
 [requires]
 python_version = "*"
