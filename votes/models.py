@@ -26,24 +26,39 @@ GENDER_CHOICES = [
     ('Other', 'Other'),
 ]
 
-TIER_CHOICES = [
-    ('Local', 'Local'),
-    ('Regional', 'Regional'),
-    ('National', 'National'),
-    ('Other', 'Other')
+LOCALITY_CHOICES = [
+    ('National', (
+            ('USA', 'United States'),
+        )
+    ),
+    ('Regional', (
+            ('R1', 'Region 1'),
+            ('R2', 'Region 2'),
+        )
+    ),
+    ('Local', (
+            ('D1', 'District 1'),
+            ('D2', 'District 2'),
+        )
+    ),
 ]
 
 class Election(models.Model):
     title = models.CharField(max_length=250)
-    tier = models.CharField(max_length=10, choices=TIER_CHOICES, null=True, blank=False)
     start_time = models.DateTimeField(auto_now=False, auto_now_add=False, null=True)
     end_time = models.DateTimeField(auto_now=False, auto_now_add=False, null=True)
 
     def __str__(self):
         return str(self.title)
 
-    def get_absolute_url(self):
-        return "elections/detail/{}".format(self.pk)
+class Position(models.Model):
+    name = models.CharField(max_length=250)
+    election = models.ForeignKey(Election, on_delete=models.CASCADE, blank=False, null=True)
+    locality = models.CharField(max_length=100, choices=LOCALITY_CHOICES, blank=False, null=True)
+    seats = models.PositiveIntegerField(default=1, blank=False)
+
+    def __str__(self):
+        return str(self.name) + ' | ' + str(self.election)
 
 class User(AbstractUser):
     first_name = models.CharField(max_length=200)
@@ -65,11 +80,8 @@ class User(AbstractUser):
     def __str__(self):
         return str(self.username)
 
-    def get_absolute_url(self):
-        return "users/profile/{}".format(self.pk)
-
 class Candidate(models.Model):
-    elections = models.ManyToManyField(Election)
+    positions = models.ManyToManyField(Position)
     first_name = models.CharField(max_length=200)
     last_name = models.CharField(max_length=200)
     picture_self = models.ImageField(null=True, blank=True)
@@ -80,6 +92,3 @@ class Candidate(models.Model):
 
     def __str__(self):
         return str(self.first_name + ' ' + self.last_name)
-
-    def get_absolute_url(self):
-        return "candidates/detail/{}".format(self.pk)
