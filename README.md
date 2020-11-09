@@ -4,7 +4,7 @@ Heroku App: https://mychoicebe.herokuapp.com/
 
 API Documentation: https://mychoicebe.herokuapp.com/swagger-ui/
 
-## VOTE
+## VOTE AND RESULTS
 Endpoint: `/vote/<election-id>`
 
 ### GET
@@ -12,95 +12,148 @@ Endpoint: `/vote/<election-id>`
 **FORMAT**
 ```
 {
-  'election': <ELECTION OBJECT>, 
-  'position_candidates': 
-  {
-    ...
-    <POSITION OBJECT>: <QuerySet [<CANDIDATE OBJECT>, <CANDIDATE OBJECT>]>, 
-    ...
-  }  
+  "id": <ELECTION ID>,
+  "position_set": [
+    {
+      "id": <POSITION-ID>,
+      "candidate_set": [
+        ...
+        {
+          "id": <CANDIDATE ID>,
+          "first_name": "",
+          "last_name": "",
+          "picture_self": null,
+          "party": "",
+          "gender": "",
+          "ethnicity": "",
+          "votes": 0,
+          "positions": [
+            ...
+            <POSITION ID>,
+            ...        
+          ]
+        }
+        ...
+      ],
+      "name": "<POSITION NAME>",
+      "locality": "<LOCALITY NAME>",
+      "seats": 1,
+      "election": <ELECTION ID>
+    }
+  ],
+  "title": "<ELECTION TITLE>",
+  "start_time": "2020-11-01T00:00:00Z",
+  "end_time": "2020-11-04T00:00:00Z"
 }
 ```
 
 **EXAMPLE**
 ```
 {
-  'election': <Election: 2020 General Election>, 
-  'position_candidates': 
-  {
-    <Position: President | 2020 General Election>: <QuerySet [<Candidate: Donald Trump>, <Candidate: Joe Biden>]>, 
-    <Position: Vice President | 2020 General Election>: <QuerySet [<Candidate: Kamala Harris>, <Candidate: Mike Pence>]>, 
-    <Position: Region 1 Senator | 2020 General Election>: <QuerySet []>
-  }  
+  "id": 3,
+  "position_set": [
+    {
+      "id": 1,
+      "candidate_set": [
+        {
+          "id": 2,
+          "first_name": "Donald",
+          "last_name": "Trump",
+          "picture_self": null,
+          "party": "Other",
+          "gender": "Male",
+          "ethnicity": "",
+          "votes": 2,
+          "positions": [
+            1,
+            4
+          ]
+        },
+        {
+          "id": 1,
+          "first_name": "Joe",
+          "last_name": "Biden",
+          "picture_self": null,
+          "party": "Other",
+          "gender": "Male",
+          "ethnicity": "",
+          "votes": 5,
+          "positions": [
+            1,
+            5
+          ]
+        }
+      ],
+      "name": "President",
+      "locality": "USA",
+      "seats": 1,
+      "election": 3
+    },
+    {
+      "id": 2,
+      "candidate_set": [
+        {
+          "id": 3,
+          "first_name": "Kamala",
+          "last_name": "Harris",
+          "picture_self": null,
+          "party": "Other",
+          "gender": "Female",
+          "ethnicity": "",
+          "votes": 4,
+          "positions": [
+            2
+          ]
+        },
+        {
+          "id": 4,
+          "first_name": "Mike",
+          "last_name": "Pence",
+          "picture_self": null,
+          "party": "Other",
+          "gender": "Male",
+          "ethnicity": "",
+          "votes": 1,
+          "positions": [
+            2
+          ]
+        }
+      ],
+      "name": "Vice President",
+      "locality": "USA",
+      "seats": 1,
+      "election": 3
+    },
+    {
+      "id": 3,
+      "candidate_set": [],
+      "name": "Region 1 Senator",
+      "locality": "R1",
+      "seats": 2,
+      "election": 3
+    }
+  ],
+  "title": "2020 General Election",
+  "start_time": "2020-11-01T00:00:00Z",
+  "end_time": "2020-11-04T00:00:00Z"
 }
 ```
-
-Candidate Object Properties:
-* id 
-* first_name
-* last_name
-* picture_self
-* party
-* gender
-* ethnicity
-* votes
-
-Position Object Properties:
-* id
-* name
-* locality
-
-Election Object Properties:
-* id
-* title
-* start_time
-* end_time
 
 ### POST 
 
 **FORMAT**
 ```
-<QueryDict: {
-  'csrfmiddlewaretoken': ['this-is-some-token'], 
-  '<POSITION NAME>': ['<CANDIDATE ID>']
-  ...
-}>
-```
-**EXAMPLE**
-```
-<QueryDict: {
-  'csrfmiddlewaretoken': ['Pg5whBoPqXByENCMxrs8iMZ0RqnNgf5HOWnOoZBuCHf7xGN88eyDax6ABiLCIPVp'], 
-  'President': ['1'], 
-  'Vice President': ['3']
-}>
-```
-
-## RESULTS
-
-**GET (equivalent to GET request of VOTE)**
-
-**FORMAT**
-```
 {
-  'election': <ELECTION OBJECT>, 
-  'position_candidates': 
-  {
-    ...
-    <POSITION OBJECT>: <QuerySet [<CANDIDATE OBJECT>, <CANDIDATE OBJECT>]>, 
-    ...
-  }  
+  ...
+  "<POSITION ID>": "<CANDIDATE ID>",
+  ...
 }
 ```
-
 **EXAMPLE**
 ```
 {
-  'election': <Election: 2020 General Election>, 
-  'position_candidates': 
-  {
-    <Position: President | 2020 General Election>: <QuerySet [<Candidate: Donald Trump>, <Candidate: Joe Biden>]>, 
-    <Position: Vice President | 2020 General Election>: <QuerySet [<Candidate: Kamala Harris>, <Candidate: Mike Pence>]>, 
-    <Position: Region 1 Senator | 2020 General Election>: <QuerySet []>
-  }  
+  ...
+  "1": "2",
+  ...
 }
 ```
